@@ -21,18 +21,6 @@ for key in ticker_dates:
     dates = ticker_dates[key]
 
     for d in dates:
-        startDate = d - dt.timedelta(days=6)
-        endDate = d + dt.timedelta(days=1)
-        if (startDate.month != endDate.month):
-            print('ticker: {}, ex_dividend_date: {}'.format(key, d))
-            av.saveDataForDividendData(ticker=key, ex_dividend_date=d)
-            exit()
-
-print('one month: {}'.format(one_month))
-print('two months: {}'.format(two_months))
-print('total: {}'.format(total))
-
-datelist = pd.date_range(dt.date(2022, 10, 10), periods = 10).tolist()
-
-test = dt.date(2022, 10, 30)
-av.getData(test, demo=True)
+        # print("{} Ex Dividend Date: {}".format(key, d))
+        av.saveDataForDividendData(ticker=key, ex_dividend_date=d)
+            

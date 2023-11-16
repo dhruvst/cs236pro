@@ -8,6 +8,7 @@ import datetime as dt
 from codebase.api_keys import av_key
 
 from alpha_vantage.timeseries import TimeSeries 
+import pandas_market_calendars as mcal
 
 # This function is used by LSTM
 def download_data(config):
@@ -32,8 +33,35 @@ def saveDataForDividendData(ticker='AAPL', ex_dividend_date=dt.datetime.today(),
     params = {}
 
     d = ex_dividend_date
+
+    # Calendar to get valid market open days
+    nyse = mcal.get_calendar('NYSE')
+
     startDate = d - dt.timedelta(days=6)
-    endDate = d + dt.timedelta(days=1)
+    valid_days = nyse.valid_days(start_date=startDate, end_date=d)
+    print('startDate valid_days: {}'.format(len(valid_days)))
+    i = 7
+    while(len(valid_days) < 7):
+        startDate = d - dt.timedelta(days=i)
+        valid_days = nyse.valid_days(start_date=startDate, end_date=d)
+        print('while:startDate valid_days: {}'.format(len(valid_days)))
+        i = i + 1
+    
+    # Note: need an extra day since the time is set at 12AM.
+    endDate = d + dt.timedelta(days=2)
+    valid_days = nyse.valid_days(start_date=d, end_date=endDate)
+    print('endDate valid_days: {}'.format(len(valid_days)))
+    i = 3
+    while(len(valid_days) < 3):
+        endDate = d + dt.timedelta(days=i)
+        valid_days = nyse.valid_days(start_date=d, end_date=endDate)
+        print('while:endDate valid_days: {}'.format(len(valid_days)))
+        i = i + 1
+
+    # Uncomment for testing the nyse calendar
+    # valid_days = nyse.valid_days(start_date=startDate, end_date=endDate)
+    # print(valid_days)
+    # return
 
     # Setup params
     if demo:
@@ -100,8 +128,8 @@ def saveDataForDividendData(ticker='AAPL', ex_dividend_date=dt.datetime.today(),
         df2_cols = [i.split(' ')[1] for i in df2.columns]
         df2.columns = df2_cols
 
-        df2 = df.sort_index()
         df = pd.concat([df, df2])
+        df = df.sort_index()
 
     # dateFormat = '%Y-%m-%d %H:%M:%S'
     # a = dt.datetime(2023, 11, 14, 19, 00, 00, 00)
@@ -113,7 +141,7 @@ def saveDataForDividendData(ticker='AAPL', ex_dividend_date=dt.datetime.today(),
     df = df.loc[c0]
 
     print('length of df: {}'.format(len(df)))
-    print(df.head())
+    # print(df.head())
 
     if not demo:
         m = d.strftime('%Y-%m-%d')
