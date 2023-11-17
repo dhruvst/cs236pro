@@ -1,3 +1,4 @@
+import os
 from codebase import av_utils as av
 
 import pandas as pd
@@ -13,14 +14,17 @@ for t in tickers:
     dates = [dt.datetime.strptime(str(x)[:10],'%Y-%m-%d') for x in dates]
     ticker_dates[t] = dates
 
-total = 0
-two_months = 0
-one_month = 0
-
 for key in ticker_dates:
     dates = ticker_dates[key]
 
     for d in dates:
-        # print("{} Ex Dividend Date: {}".format(key, d))
-        av.saveDataForDividendData(ticker=key, ex_dividend_date=d)
+        month = d.strftime('%Y-%m-%d')
+        fileName = '{}_{}.csv'.format(key, month) 
+        filePath = './div_data/' + fileName
+
+        if not os.path.isfile(filePath):
+            # print("{} Ex Dividend Date: {}".format(key, d))
+            av.saveDataForDividendData(ticker=key, ex_dividend_date=d)
             
+            # remove this to stop every time.
+            exit()

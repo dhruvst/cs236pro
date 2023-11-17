@@ -74,6 +74,7 @@ def saveDataForDividendData(ticker='AAPL', ex_dividend_date=dt.datetime.today(),
         params['function'] = 'TIME_SERIES_INTRADAY'
         params['symbol'] = ticker
         params['interval'] = interval
+        params['extended_hours'] = 'true'
         params['month'] = startDate.strftime('%Y-%m')
         params['outputsize'] = 'full'
         params['apikey'] = av_key    
@@ -148,7 +149,7 @@ def saveDataForDividendData(ticker='AAPL', ex_dividend_date=dt.datetime.today(),
         filename = 'div_data/{s}_{m}.csv'.format(s= params['symbol'], m=m) 
         df.to_csv(filename)
 
-def saveData(ticker='AAPL', demo=False):
+def saveVAEData(ticker='AAPL', month='2023-09', interval="15min", demo=False):
     url = 'https://www.alphavantage.co/query'
     params = {}
 
@@ -161,9 +162,10 @@ def saveData(ticker='AAPL', demo=False):
         params['apikey'] = 'demo'
     else: 
         params['function'] = 'TIME_SERIES_INTRADAY'
-        params['symbol'] = 'SPY'
-        params['interval'] = '1min'
-        params['month'] = '2023-09'
+        params['symbol'] = ticker
+        params['interval'] = interval
+        params['extended_hours'] = 'true'
+        params['month'] = month
         params['outputsize'] = 'full'
         params['apikey'] = av_key    
 
@@ -180,7 +182,7 @@ def saveData(ticker='AAPL', demo=False):
         return
     
     key = list(result.keys())[0]
-    print("data length:",  len(r.json()[key]))
+    # print("data length:",  len(r.json()[key]))
 
     _, header = r.json()
     df = pd.DataFrame.from_dict(r.json()[header], orient='index')
@@ -191,12 +193,12 @@ def saveData(ticker='AAPL', demo=False):
 
     df = df.sort_index()
 
-    print(df)
+    # print(df)
 
     if demo:
-        filename = 'data/{s}_{int}_DEMO.csv'.format(s= params['symbol'], int=params['interval']) 
+        filename = 'vae_data/{s}_{int}_DEMO.csv'.format(s= params['symbol'], int=params['interval']) 
     else:
-        filename = 'data/{s}_{m}.csv'.format(s= params['symbol'], m=params['month']) 
+        filename = 'vae_data/{s}_{m}.csv'.format(s= params['symbol'], m=params['month']) 
 
     df.to_csv(filename)
 
