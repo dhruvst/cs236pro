@@ -74,7 +74,7 @@ def saveDataForDividendData(ticker='AAPL', ex_dividend_date=dt.datetime.today(),
         params['function'] = 'TIME_SERIES_INTRADAY'
         params['symbol'] = ticker
         params['interval'] = interval
-        params['extended_hours'] = 'true'
+        params['extended_hours'] = 'false'
         params['month'] = startDate.strftime('%Y-%m')
         params['outputsize'] = 'full'
         params['apikey'] = av_key    
@@ -164,7 +164,7 @@ def saveVAEData(ticker='AAPL', month='2023-09', interval="15min", demo=False):
         params['function'] = 'TIME_SERIES_INTRADAY'
         params['symbol'] = ticker
         params['interval'] = interval
-        params['extended_hours'] = 'true'
+        params['extended_hours'] = 'false'
         params['month'] = month
         params['outputsize'] = 'full'
         params['apikey'] = av_key    
