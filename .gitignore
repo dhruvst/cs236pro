@@ -1,6 +1,7 @@
 __pycache__/
 *.png
 *.pth
+*.csv
 
 div_data/
 vae_data/
