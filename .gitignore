@@ -1,1 +1,7 @@
 __pycache__/
+*.png
+*.pth
+
+div_data/
+vae_data/
+test/
