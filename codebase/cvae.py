@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 import pyro
 import pyro.distributions as dist
-from pyro.infer import SVI, Trace_ELBO
+from pyro.infer import SVI, Trace_ELBO, TraceGraph_ELBO
 
 
 class Encoder(nn.Module):
@@ -48,7 +48,7 @@ class Decoder(nn.Module):
     def forward(self, z):
         y = self.relu(self.fc1(z))
         y = self.relu(self.fc2(y))
-        y = torch.sigmoid(self.fc3(y))
+        y = self.fc3(y)
         return y
 
 
@@ -91,12 +91,7 @@ class CVAE(nn.Module):
                 mask_ys = ys[xs == -1].view(batch_size, -1)
                 
                 pyro.deterministic("y", loc)
-                # For stock data, it shouldnt be sampled from a bernoulli.
-                # pyro.sample(
-                #     "y",
-                #     dist.Bernoulli(mask_loc, validate_args=False).to_event(1),
-                #     obs=mask_ys,
-                # )
+
             else:
                 # In testing, no need to sample: the output is already a
                 # probability in [0, 1] range, which better represent pixel

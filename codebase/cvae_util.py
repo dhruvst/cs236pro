@@ -65,11 +65,9 @@ def visualize(
     )
     cvae_preds = predictive(inputs)["y"].view(num_samples, num_images, 6)
 
-    # breakpoint()
     baseline_preds = torch.from_numpy(datasets['train'].reverseMinMax(baseline_preds.squeeze()))
     actual = torch.from_numpy(datasets['train'].reverseMinMax(actual.squeeze()))
 
-    #breakpoint()
     for i in range(cvae_preds.shape[0]):
         for j in range(cvae_preds.shape[1]):
             cvae_preds[i,j] = torch.from_numpy(datasets['train'].reverseMinMax(cvae_preds[i,j].reshape(-1,1))).squeeze()
@@ -87,7 +85,7 @@ def visualize(
     baseline_final = torch.cat(baseline_final, dim=-1)
     
     cvae_final = []
-    cvae_final.append(cvae_preds[:,0,:5])
+    cvae_final.append(actual[0,:5].unsqueeze(0))
     cvae_final.append(cvae_preds[:,:,5])
     cvae_final = torch.cat(cvae_final, dim=-1)
 

@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-vs",
         "--num-samples",
-        default=10,
+        default=1,
         type=int,
         help="number of samples to visualize per image",
     )
