@@ -16,7 +16,7 @@ from pyro.infer import SVI, Trace_ELBO, TraceGraph_ELBO
 class Encoder(nn.Module):
     def __init__(self, z_dim, hidden_1, hidden_2):
         super().__init__()
-        self.fc1 = nn.Linear(6, hidden_1)
+        self.fc1 = nn.Linear(6*3, hidden_1)
         self.fc2 = nn.Linear(hidden_1, hidden_2)
         self.fc31 = nn.Linear(hidden_2, z_dim)
         self.fc32 = nn.Linear(hidden_2, z_dim)
@@ -26,7 +26,7 @@ class Encoder(nn.Module):
         # put x and y together in the same image for simplification
         xc = x.clone()
         xc[x == -1] = y[x == -1]
-        xc = xc.view(-1, 6)
+        xc = xc.view(-1, 6*3)
         # then compute the hidden units
         hidden = self.relu(self.fc1(xc))
         hidden = self.relu(self.fc2(hidden))
@@ -42,7 +42,7 @@ class Decoder(nn.Module):
         super().__init__()
         self.fc1 = nn.Linear(z_dim, hidden_1)
         self.fc2 = nn.Linear(hidden_1, hidden_2)
-        self.fc3 = nn.Linear(hidden_2, 6)
+        self.fc3 = nn.Linear(hidden_2, 6*3)
         self.relu = nn.ReLU()
 
     def forward(self, z):
@@ -87,7 +87,7 @@ class CVAE(nn.Module):
 
             if ys is not None:
                 # In training, we will only sample in the masked image
-                mask_loc = loc[(xs == -1).view(-1, 6)].view(batch_size, -1)
+                mask_loc = loc[(xs == -1).view(-1, 6*3)].view(batch_size, -1)
                 mask_ys = ys[xs == -1].view(batch_size, -1)
                 
                 pyro.deterministic("y", loc)

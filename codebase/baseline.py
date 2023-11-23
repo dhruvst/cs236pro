@@ -14,13 +14,13 @@ from tqdm import tqdm
 class BaselineNet(nn.Module):
     def __init__(self, hidden_1, hidden_2):
         super().__init__()
-        self.fc1 = nn.Linear(6, hidden_1)
+        self.fc1 = nn.Linear(6*3, hidden_1)
         self.fc2 = nn.Linear(hidden_1, hidden_2)
-        self.fc3 = nn.Linear(hidden_2, 6)
+        self.fc3 = nn.Linear(hidden_2, 6*3)
         self.relu = nn.ReLU()
 
     def forward(self, x):
-        x = x.view(-1, 6)
+        x = x.view(-1, 6*3)
         hidden = self.relu(self.fc1(x))
         hidden = self.relu(self.fc2(hidden))
         y = torch.sigmoid(self.fc3(hidden))

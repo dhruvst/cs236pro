@@ -154,4 +154,5 @@ for ticker, dates in d_trades.items():
         df1 = df.loc[df.index <= date][-N_PRIOR_DAYS:]
         if len(df1) >= N_PRIOR_DAYS:
             d_dfs[ticker][date] = df1
+            
 pickle.dump(d_dfs,open('codebase/data/d_dfs.pkd','wb'))
