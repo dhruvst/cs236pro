@@ -96,17 +96,25 @@ def visualize(
     # Mitigates 'Tensor' object has no attribute 'ndim'
     torch.Tensor.ndim = property(lambda self: len(self.shape))
     
-    t = range(baseline_final.shape[-1])
+    t = range(baseline_final.shape[0])
 
-    plt.plot(t, actual_final, label='actual')
-    plt.plot(t, baseline_final, label='baseline')
-    plt.plot(t, torch.transpose(cvae_final, 0, 1))
+    # breakpoint()
+
+    fig, axs = plt.subplots(3)
+    fig.suptitle('Don\'t know which one is which.')
+
+    for i in range(actual_final.shape[-1]):
+        axs[i].plot(t, actual_final[:,i])
+        axs[i].plot(t, baseline_final[:,i])
+        axs[i].plot(t, cvae_final[0,:,i]) # Assumes only one sample
+
+    labels = ['actual', 'baseline', 'cvae']
     
-    plt.legend()
+    axs[2].legend(labels=labels)
     
     # Save plot
-    plt.savefig(image_path)
-    plt.clf()
+    fig.savefig(image_path)
+    fig.clf()
 
 
 def generate_table(
