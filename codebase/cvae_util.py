@@ -98,19 +98,19 @@ def visualize(
     
     t = range(baseline_final.shape[0])
 
-    # breakpoint()
-
     fig, axs = plt.subplots(3)
-    fig.suptitle('Don\'t know which one is which.')
 
     for i in range(actual_final.shape[-1]):
         axs[i].plot(t, actual_final[:,i])
         axs[i].plot(t, baseline_final[:,i])
         axs[i].plot(t, cvae_final[0,:,i]) # Assumes only one sample
 
+    axs[0].title.set_text('Close')
+    axs[1].title.set_text('High')
+    axs[2].title.set_text('Low')
+
     labels = ['actual', 'baseline', 'cvae']
-    
-    axs[2].legend(labels=labels)
+    axs[0].legend(labels=labels)
     
     # Save plot
     fig.savefig(image_path)

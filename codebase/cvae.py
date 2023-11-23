@@ -48,7 +48,7 @@ class Decoder(nn.Module):
     def forward(self, z):
         y = self.relu(self.fc1(z))
         y = self.relu(self.fc2(y))
-        y = self.fc3(y)
+        y = torch.sigmoid(self.fc3(y))
         return y
 
 
