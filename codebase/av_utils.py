@@ -204,9 +204,16 @@ def saveVAEData(ticker='AAPL', month='2023-09', interval="15min", demo=False):
 
 
 
-def getNews(ticker='AAPL', demo=False):
+def getNews(ticker='AAPL', startDate=dt.datetime(2022, 1, 1, 00, 00, 00, 00), demo=False):
     url = 'https://www.alphavantage.co/query'
     params = {}
+
+    
+    endDate = startDate + dt.timedelta(days=30)
+
+    dateFormat = '%Y%m%dT%H%M'
+    startDateStr = startDate.strftime(dateFormat)
+    endDateStr = endDate.strftime(dateFormat)
 
     if demo:
         params['function'] = 'NEWS_SENTIMENT'
@@ -215,8 +222,8 @@ def getNews(ticker='AAPL', demo=False):
     else:
         params['function'] = 'NEWS_SENTIMENT'
         params['tickers'] = ticker
-        params['time_from'] = '20230901T0000'
-        params['time_to'] = '20230930T2359'
+        params['time_from'] = startDateStr
+        params['time_to'] = endDateStr
         params['limit'] = 1000
         params['apikey'] = av_key    
 
@@ -226,6 +233,8 @@ def getNews(ticker='AAPL', demo=False):
 
     if 'feed' not in r.json():
         print('No feed for {}'.format(ticker))
+        print(r.json())
+        print(r.url)
         return
 
     # json_formatted = json.dumps(r.json()['feed'][2], indent=2)
@@ -233,7 +242,7 @@ def getNews(ticker='AAPL', demo=False):
     news_sentiments = []
     for news in r.json()['feed']:
         news_sentiment = []
-        time_published = datetime.strptime(news['time_published'], '%Y%m%dT%H%M%S')
+        time_published = dt.datetime.strptime(news['time_published'], '%Y%m%dT%H%M%S')
         news_sentiment.append(time_published)
         ticker_score = [ns for ns in news['ticker_sentiment'] if ns.get('ticker')==params['tickers']]
         if len(ticker_score) > 1:
@@ -241,16 +250,19 @@ def getNews(ticker='AAPL', demo=False):
         
         news_sentiment.append(ticker_score[0]['relevance_score'])
         news_sentiment.append(ticker_score[0]['ticker_sentiment_score'])
+        news_sentiment.append(ticker_score[0]['ticker_sentiment_label'])
         news_sentiments.append(news_sentiment)
 
-    df = pd.DataFrame(news_sentiments, columns=['time_published', 'relevance_score', 'ticker_sentiment_score'])
+    df = pd.DataFrame(news_sentiments, columns=['time_published', 'relevance_score', 'ticker_sentiment_score', 'ticker_sentiment_label'])
     print('Found {} news articles for {}'.format(df.shape[0], params['tickers']))
 
+    df = df.sort_values(by=['time_published'])
+
     if demo:
-        filename = 'data/{s}_NEWS_DEMO.csv'.format(s= params['tickers']) 
+        filename = 'news_data/{s}_NEWS_DEMO.csv'.format(s= params['tickers']) 
     else:
-        m = dt.strptime(params['time_from'], '%Y%m%dT%H%M%S').strftime('%Y-%m')
-        filename = 'data/{s}_{m}_NEWS.csv'.format(s= params['tickers'], m=m) 
+        m = startDate.strftime('%Y-%m')
+        filename = 'news_data/{s}_{m}_NEWS.csv'.format(s= params['tickers'], m=m) 
 
     df.to_csv(filename)
 
