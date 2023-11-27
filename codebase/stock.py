@@ -7,10 +7,9 @@ from torchvision.transforms import Compose, functional
 from sklearn.preprocessing import MinMaxScaler
 
 class STOCK(Dataset):
-    def __init__(self, ticker='COST', date='', param='High, Low', train=True, transform=None):
+    def __init__(self, ticker='COST', date='', train=True, transform=None):
         self.filePath = './codebase/data/d_dfs.pkd'
-        self.param = param
-        self.original, self.minmax = self.loadData(ticker, date, self.param)
+        self.original, self.minmax = self.loadData(ticker, date)
         self.transform = transform
 
     def __len__(self):
@@ -26,7 +25,7 @@ class STOCK(Dataset):
 
         return sample
     
-    def loadData(self, ticker, date, param):
+    def loadData(self, ticker, date):
         df = pd.read_pickle(self.filePath)
         df_ticker = df[ticker]
 
