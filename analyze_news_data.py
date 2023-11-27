@@ -5,8 +5,7 @@ months = pd.date_range(start='6/1/2022',
                       end='12/1/2022', freq='MS').tolist()
 
 key = 'COST'
-sum = 0
-numDates = 0
+countPerDay = []
 
 # Counting how many are actually relevant.
 totalCount = 0
@@ -31,8 +30,7 @@ for m in months:
         if (dateStr == dateDateTime.strftime(dateFormat)):
             count = count + 1
         else:
-            sum = sum + count
-            numDates = numDates + 1
+            countPerDay.append(count)
             count = 1
             dateStr = dateDateTime.strftime(dateFormat)
             # print(dateStr)
@@ -42,11 +40,13 @@ for m in months:
             relevantCount = relevantCount + 1
 
 
-    
-    sum = sum + count
-    numDates = numDates + 1
+    # Add the last item
+    countPerDay.append(count)
 
-avg = sum/numDates
+countPerDayDF = pd.Series(countPerDay)
+
+print(countPerDayDF.describe())
+
 relevantPct = relevantCount/totalCount*100
-print('Average number of {:.2f} news per day'.format(avg))
+print('Average number of {:.2f} news per day'.format(countPerDayDF.mean()))
 print('Out of {} news {} ({:.2f}%) were relevant news'.format(totalCount, relevantCount, relevantPct))
