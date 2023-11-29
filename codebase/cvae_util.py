@@ -8,8 +8,13 @@ import numpy as np
 import pandas as pd
 import torch
 from codebase.baseline import MaskedMSELoss
-# from codebase.goog import get_data
-from codebase.stock import get_data
+
+# Without Sentiment
+# from codebase.stock import get_data
+
+# With Sentiment
+from codebase.stock2 import get_data
+
 from torch.utils.data import DataLoader
 from torchvision.utils import make_grid
 from tqdm import tqdm
@@ -48,6 +53,8 @@ def visualize(
     num_samples,
     image_path=None,
 ):
+    num_days = 6
+
     # Load sample random data
     datasets, _, dataset_sizes = get_data(pos=num_quadrant_inputs, batch_size=num_images)
     dataloader = DataLoader(datasets["val"], batch_size=num_images, shuffle=False)
@@ -64,7 +71,14 @@ def visualize(
     predictive = Predictive(
         pre_trained_cvae.model, guide=pre_trained_cvae.guide, num_samples=num_samples
     )
-    cvae_preds = predictive(inputs)["y"].view(num_samples, num_images, 6, 3)
+    cvae_preds = predictive(inputs)["y"].view(num_samples, num_images, num_days, -1)
+
+    # Remove the news sentiment from the output.
+    if(inputs.shape[-1] > 3):
+        actual = actual[:,:,0:3]
+        outputs = outputs[:,:,0:3]
+        baseline_preds = baseline_preds[:,:,0:3]
+        cvae_preds = cvae_preds[:,:,:,0:3]
 
     baseline_preds = torch.from_numpy(datasets['train'].reverseMinMax(baseline_preds.reshape(-1,3)))
     actual = torch.from_numpy(datasets['train'].reverseMinMax(actual.reshape(-1,3)))

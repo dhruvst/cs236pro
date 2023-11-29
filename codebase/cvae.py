@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 import pyro
 import pyro.distributions as dist
-from pyro.infer import SVI, Trace_ELBO, TraceGraph_ELBO
+from pyro.infer import SVI, Trace_ELBO
 
 
 class Encoder(nn.Module):
@@ -41,6 +41,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, inputSize, z_dim, hidden_1, hidden_2):
         super().__init__()
+        self.inputSize = inputSize
         self.fc1 = nn.Linear(z_dim, hidden_1)
         self.fc2 = nn.Linear(hidden_1, hidden_2)
         self.fc3 = nn.Linear(hidden_2, inputSize)
@@ -49,7 +50,13 @@ class Decoder(nn.Module):
     def forward(self, z):
         y = self.relu(self.fc1(z))
         y = self.relu(self.fc2(y))
-        y = torch.sigmoid(self.fc3(y))
+
+        if (self.inputSize > 6*3):
+            # With sentiment
+            y = self.fc3(y)
+        else:
+            # Without sentiment.
+            y = torch.sigmoid(self.fc3(y)) 
         return y
 
 
