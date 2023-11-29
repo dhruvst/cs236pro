@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 import requests
@@ -204,7 +205,7 @@ def saveVAEData(ticker='AAPL', month='2023-09', interval="15min", demo=False):
 
 
 
-def getNews(ticker='AAPL', startDate=dt.datetime(2022, 1, 1, 00, 00, 00, 00), demo=False):
+def saveNews(ticker='AAPL', startDate=dt.datetime(2022, 1, 1, 00, 00, 00, 00), demo=False):
     url = 'https://www.alphavantage.co/query'
     params = {}
 
@@ -265,6 +266,119 @@ def getNews(ticker='AAPL', startDate=dt.datetime(2022, 1, 1, 00, 00, 00, 00), de
         filename = 'news_data/{s}_{m}_NEWS.csv'.format(s= params['tickers'], m=m) 
 
     df.to_csv(filename)
+
+def getNewsForDates(ticker, dates):
+    url = 'https://www.alphavantage.co/query'
+    params = {}
+    startDate = dates[0]
+
+    d = startDate.strftime('%Y-%m-%d')
+    fileName = '{}_{}.csv'.format(ticker, d) 
+    filePath = './news_data/' + fileName
+
+    if os.path.isfile(filePath):
+        df = pd.read_csv(filePath)
+        df = df.set_index('time_published')
+        df = df.drop(columns=['ticker_sentiment_label'])
+        return df
+    
+    
+    dateFormat = '%Y%m%dT%H%M'
+    startDateStr = startDate.strftime(dateFormat)
+
+    endDate = dates[-1] + dt.timedelta(days=1)
+    endDateStr = endDate.strftime(dateFormat)
+
+    params['function'] = 'NEWS_SENTIMENT'
+    params['tickers'] = ticker
+    params['time_from'] = startDateStr
+    params['time_to'] = endDateStr
+    params['limit'] = 1000
+    params['apikey'] = av_key    
+
+    r = requests.get(url, params=params)
+
+    # print(r.json()['feed'][0])
+
+    if 'feed' not in r.json():
+        print('No feed for {}'.format(ticker))
+        print(r.json())
+        print(r.url)
+
+        news_sentiments = []
+        for d in dates:
+            news_sentiment = {}
+            news_sentiment['time_published'] = d
+            news_sentiment['relevance_score'] = 0 
+            news_sentiment['ticker_sentiment_score'] = 0
+            news_sentiment['ticker_sentiment_label'] = 'None'
+            news_sentiments.append(news_sentiment)
+
+        return pd.DataFrame(news_sentiments)
+
+    # json_formatted = json.dumps(r.json()['feed'][2], indent=2)
+    inputFormat = '%Y%m%dT%H%M%S'
+    news_sentiment = {}
+    news_sentiments = []
+    time_published = dt.datetime.strptime(r.json()['feed'][0]['time_published'], inputFormat)
+    
+    count = 0
+    for news in r.json()['feed']:
+        count = count + 1
+        ticker_score = [ns for ns in news['ticker_sentiment'] if ns.get('ticker')==params['tickers']]
+        if len(ticker_score) > 1:
+            raise RuntimeError('More than one sentiment score.')
+        
+        new_time_published = dt.datetime.strptime(news['time_published'], inputFormat)
+
+        if(time_published.date() == new_time_published.date()):
+            if 'relevance_score' not in news_sentiment or ticker_score[0]['relevance_score'] > news_sentiment['relevance_score']:
+                news_sentiment['time_published'] = new_time_published
+                news_sentiment['relevance_score'] = ticker_score[0]['relevance_score']
+                news_sentiment['ticker_sentiment_score'] = ticker_score[0]['ticker_sentiment_score']
+                news_sentiment['ticker_sentiment_label'] = ticker_score[0]['ticker_sentiment_label']
+        else:
+            if pd.to_datetime(news_sentiment['time_published'].date()) in dates:
+                news_sentiments.append(news_sentiment)
+            time_published = new_time_published
+            news_sentiment = {}
+            news_sentiment['time_published'] = time_published
+            news_sentiment['relevance_score'] = ticker_score[0]['relevance_score']
+            news_sentiment['ticker_sentiment_score'] = ticker_score[0]['ticker_sentiment_score']
+            news_sentiment['ticker_sentiment_label'] = ticker_score[0]['ticker_sentiment_label']
+
+    if pd.to_datetime(news_sentiment['time_published'].date()) in dates:
+        news_sentiments.append(news_sentiment)
+
+    print('Found {} news articles for {}'.format(count, params['tickers']))
+
+    df = pd.DataFrame(news_sentiments)
+    df = df.set_index('time_published')
+
+    update = False
+    for d in dates:
+        if d not in pd.to_datetime(df.index.date):
+            news_sentiment = {}
+            news_sentiment['time_published'] = d
+            news_sentiment['relevance_score'] = 0 
+            news_sentiment['ticker_sentiment_score'] = 0
+            news_sentiment['ticker_sentiment_label'] = 'None'
+            news_sentiments.append(news_sentiment)
+            update = True
+    
+    if update:
+        df = pd.DataFrame(news_sentiments)
+        df = df.set_index('time_published')
+
+    df = df.sort_index()
+
+    d = startDate.strftime('%Y-%m-%d')
+    filename = 'news_data/{s}_{d}.csv'.format(s= params['tickers'], d=d)
+    df.to_csv(filename)
+
+    df = df.drop(columns=['ticker_sentiment_label'])
+
+    return df
 
 if __name__ == "__main__":
     # Uncomment to test saveData
