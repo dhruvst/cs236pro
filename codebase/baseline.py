@@ -12,15 +12,16 @@ from tqdm import tqdm
 
 
 class BaselineNet(nn.Module):
-    def __init__(self, hidden_1, hidden_2):
+    def __init__(self, dataSize, hidden_1, hidden_2):
         super().__init__()
-        self.fc1 = nn.Linear(6*3, hidden_1)
+        self.dataSize = dataSize
+        self.fc1 = nn.Linear(self.dataSize, hidden_1)
         self.fc2 = nn.Linear(hidden_1, hidden_2)
-        self.fc3 = nn.Linear(hidden_2, 6*3)
+        self.fc3 = nn.Linear(hidden_2, self.dataSize)
         self.relu = nn.ReLU()
 
     def forward(self, x):
-        x = x.view(-1, 6*3)
+        x = x.view(-1, self.dataSize)
         hidden = self.relu(self.fc1(x))
         hidden = self.relu(self.fc2(hidden))
         y = torch.sigmoid(self.fc3(hidden))
@@ -49,7 +50,8 @@ def train(
     model_path,
 ):
     # Train baseline
-    baseline_net = BaselineNet(500, 500)
+    dataSize = 6 * 5
+    baseline_net = BaselineNet(dataSize, 500, 500)
     baseline_net.to(device)
     optimizer = torch.optim.Adam(baseline_net.parameters(), lr=learning_rate)
     criterion = MaskedMSELoss()

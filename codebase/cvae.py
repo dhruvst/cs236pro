@@ -14,9 +14,10 @@ from pyro.infer import SVI, Trace_ELBO, TraceGraph_ELBO
 
 
 class Encoder(nn.Module):
-    def __init__(self, z_dim, hidden_1, hidden_2):
+    def __init__(self, inputSize, z_dim, hidden_1, hidden_2):
         super().__init__()
-        self.fc1 = nn.Linear(6*3, hidden_1)
+        self.inputSize = inputSize
+        self.fc1 = nn.Linear(inputSize, hidden_1)
         self.fc2 = nn.Linear(hidden_1, hidden_2)
         self.fc31 = nn.Linear(hidden_2, z_dim)
         self.fc32 = nn.Linear(hidden_2, z_dim)
@@ -26,7 +27,7 @@ class Encoder(nn.Module):
         # put x and y together in the same image for simplification
         xc = x.clone()
         xc[x == -1] = y[x == -1]
-        xc = xc.view(-1, 6*3)
+        xc = xc.view(-1, self.inputSize)
         # then compute the hidden units
         hidden = self.relu(self.fc1(xc))
         hidden = self.relu(self.fc2(hidden))
@@ -38,11 +39,11 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, z_dim, hidden_1, hidden_2):
+    def __init__(self, inputSize, z_dim, hidden_1, hidden_2):
         super().__init__()
         self.fc1 = nn.Linear(z_dim, hidden_1)
         self.fc2 = nn.Linear(hidden_1, hidden_2)
-        self.fc3 = nn.Linear(hidden_2, 6*3)
+        self.fc3 = nn.Linear(hidden_2, inputSize)
         self.relu = nn.ReLU()
 
     def forward(self, z):
@@ -53,17 +54,18 @@ class Decoder(nn.Module):
 
 
 class CVAE(nn.Module):
-    def __init__(self, z_dim, hidden_1, hidden_2, pre_trained_baseline_net):
+    def __init__(self, inputSize, z_dim, hidden_1, hidden_2, pre_trained_baseline_net):
         super().__init__()
         # The CVAE is composed of multiple MLPs, such as recognition network
         # qφ(z|x, y), (conditional) prior network pθ(z|x), and generation
         # network pθ(y|x, z). Also, CVAE is built on top of the NN: not only
         # the direct input x, but also the initial guess y_hat made by the NN
         # are fed into the prior network.
+        self.inputSize = inputSize
         self.baseline_net = pre_trained_baseline_net
-        self.prior_net = Encoder(z_dim, hidden_1, hidden_2)
-        self.generation_net = Decoder(z_dim, hidden_1, hidden_2)
-        self.recognition_net = Encoder(z_dim, hidden_1, hidden_2)
+        self.prior_net = Encoder(inputSize, z_dim, hidden_1, hidden_2)
+        self.generation_net = Decoder(inputSize, z_dim, hidden_1, hidden_2)
+        self.recognition_net = Encoder(inputSize, z_dim, hidden_1, hidden_2)
 
     def model(self, xs, ys=None):
         # register this pytorch module and all of its sub-modules with pyro
@@ -87,7 +89,7 @@ class CVAE(nn.Module):
 
             if ys is not None:
                 # In training, we will only sample in the masked image
-                mask_loc = loc[(xs == -1).view(-1, 6*3)].view(batch_size, -1)
+                mask_loc = loc[(xs == -1).view(-1, self.inputSize)].view(batch_size, -1)
                 mask_ys = ys[xs == -1].view(batch_size, -1)
                 
                 pyro.deterministic("y", loc)
@@ -130,7 +132,8 @@ def train(
     # clear param store
     pyro.clear_param_store()
 
-    cvae_net = CVAE(200, 500, 500, pre_trained_baseline_net)
+    inputSize = 6 * 5 # 6 * 3 without sentiment data.
+    cvae_net = CVAE(inputSize, 200, 500, 500, pre_trained_baseline_net)
     cvae_net.to(device)
     optimizer = pyro.optim.Adam({"lr": learning_rate})
     svi = SVI(cvae_net.model, cvae_net.guide, optimizer, loss=Trace_ELBO())
