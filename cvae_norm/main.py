@@ -19,7 +19,6 @@ def train_predict(ticker, date
                     ,datasets, dataloaders, dataset_sizes, device 
                      ,input_size, ncols, input_shape, early_stop_patience, num_epochs, learning_rate):
     
-    mask_shape=[input_size,ncols]
     d_baseline, d_cvae = {}, {}
     dataset = datasets[ticker][date]
     dataloader_test = DataLoader(dataset["test"], batch_size=1, shuffle=False)
@@ -35,9 +34,9 @@ def train_predict(ticker, date
         prediction = torch.from_numpy(dataset['test'].reverseMinMax(prediction[:,:3]))
         index = {'input_low':2, 'input_high':1}
         if input_type == 'input_low' and prelim_high_prediction:
-            return prediction[mask_shape[0], index['input_low']].item()\
-                    , prediction[mask_shape[0]+mask_shape[1]-1, index['input_high']].item()
-        return prediction[mask_shape[0], index[input_type]].item(),0
+            return prediction[input_size, index['input_low']].item()\
+                    , prediction[input_size+2, index['input_high']].item()
+        return prediction[input_size, index[input_type]].item(),0
     
     baseline_net = train_baseline(device=device,
             dataloaders=dataloaders[ticker][date],
@@ -90,6 +89,13 @@ def get_predictions(datasets, dataloaders, dataset_sizes, device
     return d_baseline, d_cvae
 
 def main(args):
+    if args.ncols > 3:
+        args.ncols =4
+        print('sentiment data included')
+        
+    input_shape = [args.input_size + 5, args.ncols]
+        
+    
     device = torch.device(
         "cuda:0" if torch.cuda.is_available() and args.cuda else "cpu")
     
@@ -98,7 +104,7 @@ def main(args):
                                                         ,filepath = args.data_path)
     
     get_predictions(datasets, dataloaders, dataset_sizes, device = device
-                    ,input_size = args.input_size,ncols = args.ncols,input_shape=args.input_shape
+                    ,input_size = args.input_size,ncols = args.ncols,input_shape=input_shape
                     ,filepath = args.data_path,nn_pred_path=args.nn_predictions_path,cvae_pred_path=args.cvae_predictions_path
                    ,early_stop_patience=args.esp,num_epochs=args.n,learning_rate=args.lr)
 
@@ -120,22 +126,19 @@ if __name__ == "__main__":
         "--cuda", action="store_true", default=False, help="whether to use cuda"
     )
     parser.add_argument(
-        "--ncols", default=3, help="number of data columns"
+        "--ncols", default=3, type=int, help="number of data columns"
     )
     parser.add_argument(
-        "--input_shape", default=[10,3], help="[number of rows, number of colums] of input, including mask"
-    )
-    parser.add_argument(
-        "--input_size", default=5, help="number of unmasked rows in input"
+        "--input_size", default=5, type=int, help="number of unmasked rows in input"
     )
     parser.add_argument(
         "--data_path", default='d_dfs.pkd', help="path to read the dataset"
     )
     parser.add_argument(
-        "--nn_predictions_path", default='predictions_baseline_norm_input55.pkd', help="output path for baseline predictions"
+        "--nn_predictions_path", default='predictions_baseline_norm_sent.pkd', help="output path for baseline predictions"
     )
     parser.add_argument(
-        "--cvae_predictions_path", default='predictions_cvae_norm_input55.pkd', help="output path for baseline predictions"
+        "--cvae_predictions_path", default='predictions_cvae_norm_sent.pkd', help="output path for baseline predictions"
     )
     args = parser.parse_args()
 

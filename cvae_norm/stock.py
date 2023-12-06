@@ -34,7 +34,10 @@ class STOCK(Dataset):
         df_norm = pd.DataFrame(minmax.transform(df[['close','high','low']].values).reshape(-1,3))
         
         df_norm.index = df.index
-        df_norm.columns = df.columns
+        df_norm.columns = ['close','high','low']
+   
+        if self.ncols > 3:
+            df_norm['sentiment'] = df['relevance_score']*df['ticker_sentiment_score']
 
         dataset = []
         for i in range(len(df_norm) - (input_size+mask_size) - 1):
@@ -80,6 +83,8 @@ class MaskData:
         sample["input"] = inp
         sample["output"] = out
         
+        # Remove the sentiment from output so that we dont calculate loss for it.
+        out[self.pos:, 3:] = -1
         
         return sample
     
